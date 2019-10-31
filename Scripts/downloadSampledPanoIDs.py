@@ -2,6 +2,15 @@
 
 # Copyright(C) Xiaojiang Li, Ian Seiferling, Marwa Abdulhai, Senseable City Lab, MIT 
 
+import urllib,urllib2
+import xmltodict
+import cStringIO
+import ogr, osr
+import time
+import os,os.path
+import PanoDownload 
+import json
+    
 def GSVpanoMetadataCollector(samplesFeatureClass,num,ouputTextFolder):
     '''
     This function is used to call the Google API url to collect the metadata of
@@ -14,13 +23,6 @@ def GSVpanoMetadataCollector(samplesFeatureClass,num,ouputTextFolder):
         ouputTextFolder: the output folder for the panoinfo
         
     '''
-    
-    import urllib,urllib2
-    import xmltodict
-    import cStringIO
-    import ogr, osr
-    import time
-    import os,os.path
     
     if not os.path.exists(ouputTextFolder):
         os.makedirs(ouputTextFolder)
@@ -97,7 +99,63 @@ def GSVpanoMetadataCollector(samplesFeatureClass,num,ouputTextFolder):
                     
         panoInfoText.close()
 
+def getHistoricPanoIDs(samplesFeatureClass,num,ouputTextFolder):
+    
+    if not os.path.exists(ouputTextFolder):
+        os.makedirs(ouputTextFolder)
+    
+    driver = ogr.GetDriverByName('ESRI Shapefile')
+    
+    # change the projection of shapefile to the WGS84
+    dataset = driver.Open(samplesFeatureClass)
+    layer = dataset.GetLayer()
+    
+    sourceProj = layer.GetSpatialRef()
+    targetProj = osr.SpatialReference()
+    targetProj.ImportFromEPSG(4326)
+    transform = osr.CoordinateTransformation(sourceProj, targetProj)
+    
+    # loop all the features in the featureclass
+    feature = layer.GetNextFeature()
+    featureNum = layer.GetFeatureCount()
+    batch = featureNum/num
+    
+    for b in range(batch):
+        # for each batch process num GSV site
+        start = b*num
+        end = (b+1)*num
+        if end > featureNum:
+            end = featureNum
+        
+        ouputTextFile = 'Historic_PNT_start%s_end%s.json'%(start,end)
+        ouputGSVinfoFile = os.path.join(ouputTextFolder,ouputTextFile)
+        
+        # skip over those existing txt files
+        if os.path.exists(ouputGSVinfoFile):
+            continue
+        
+        time.sleep(1)
+        
 
+        pano_record = {}
+        # process num feature each time
+        for i in range(start, end):
+            feature = layer.GetFeature(i)        
+            geom = feature.GetGeometryRef()
+
+            # trasform the current projection of input shapefile to WGS84
+            #WGS84 is Earth centered, earth fixed terrestrial ref system
+            geom.Transform(transform)
+            lon = geom.GetX()
+            lat = geom.GetY()
+            key = str(lat)+'_'+str(lon)
+            panoids = PanoDownload.panoids(lat, lon)
+            pano_record[key] = panoids
+            print 'The coordinate (%s,%s), has %d panoIds'%(lat,lon, len(panoids))
+        
+        with open(ouputGSVinfoFile, 'w') as fp:
+            json.dump(pano_record, fp)
+    
 # ------------Main Function -------------------    
 if __name__ == "__main__":
     import os, os.path
@@ -106,5 +164,6 @@ if __name__ == "__main__":
     inputShp = os.path.join(root,'edges/samples.shp')
     outputTxt = root
     
-    GSVpanoMetadataCollector(inputShp,1000,outputTxt)
+#     GSVpanoMetadataCollector(inputShp,1000,outputTxt)
+    getHistoricPanoIDs(inputShp,1000,outputTxt)
 
