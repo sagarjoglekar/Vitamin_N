@@ -14,8 +14,13 @@ import itertools
 from PIL import Image
 from io import BytesIO
 
-def getDownloadedKeys(ImageDir):
-    images = glob.glob(ImageDir +'*.jpg')
+def getDownloadedImages(ImageDir):
+    try:
+        images =['_'.join(k.split('/')[-1].split('_')[:2]) for k in glob.glob(ImageDir +'*.jpg')]
+        return images
+    except:
+        return []
+    
     
 
 def downloadImages(cityDir, imageDir, imageMapping, fov, pitch, heading, key):
@@ -68,7 +73,7 @@ def extractMappings(file):
         
         
 if __name__ == '__main__':
-    cityDir = '../Data/Cambridge/'
+    cityDir = '../Data/GreaterLondon/'
     key_file = 'keys.txt'
     files= glob.glob(cityDir + '*.json')    
     
@@ -80,8 +85,11 @@ if __name__ == '__main__':
     
     print ('The key list is:=============', keylist)
     for i in range(len(files)):
-        panoMap = extractMappings(files[i]) 
+        panoMap = extractMappings(files[i])
+        downloadedImages = getDownloadedImages(cityDir + 'GSV_Downloads/')
+        filteredPanoMap = {k:panoMap[k] for k in panoMap.keys() if k not in downloadedImages} 
         keyidx = i%len(keylist)
-        downloadImages(cityDir,'GSV_Downloads/',panoMap,120,0,0,keylist[keyidx])
+        print('Using Key: %s',keylist[keyidx])
+        downloadImages(cityDir,'GSV_Downloads/',filteredPanoMap,120,0,0,keylist[keyidx])
         
         

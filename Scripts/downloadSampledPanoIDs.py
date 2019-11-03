@@ -10,6 +10,8 @@ import time
 import os,os.path
 import PanoDownload 
 import json
+import os, os.path
+    
     
 def GSVpanoMetadataCollector(samplesFeatureClass,num,ouputTextFolder):
     '''
@@ -158,9 +160,7 @@ def getHistoricPanoIDs(samplesFeatureClass,num,ouputTextFolder):
     
 # ------------Main Function -------------------    
 if __name__ == "__main__":
-    import os, os.path
-    
-    root = '../Data/Cambridge/'
+    root = '../Data/GreaterLondon/'
     inputShp = os.path.join(root,'edges/samples.shp')
     outputTxt = root
     
