@@ -1,3 +1,6 @@
 *.pyc
 *.out
+*.log
+*.csv
 *.txt
+Notebooks/.ipynb_checkpoints/*
