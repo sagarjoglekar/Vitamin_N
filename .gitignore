@@ -4,3 +4,4 @@
 *.csv
 *.txt
 Notebooks/.ipynb_checkpoints/*
+Notebooks/data/
